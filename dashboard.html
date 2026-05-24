@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flight Price Dashboard</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg2: #151820;
+    --bg3: #1c2030;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555b6e;
+    --ryanair: #f5a623;
+    --wizz: #c9247a;
+    --ryanair-bg: rgba(245,166,35,0.12);
+    --wizz-bg: rgba(201,36,122,0.12);
+    --green: #3ecf8e;
+    --red: #f06c6c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+  }
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .header h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+  .header p { font-size: 0.8rem; color: var(--text3); margin-top: 0.25rem; }
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: 10px;
+    padding: 0.6rem 1.1rem;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .upload-zone:hover { border-color: var(--ryanair); color: var(--text); }
+  .upload-zone input { display: none; }
+  .route-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+  }
+  .tab {
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); background: var(--bg3); }
+  .tab.active { background: var(--bg3); border-color: var(--border2); color: var(--text); }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .stat-card .label {
+    font-size: 0.72rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+  .stat-card .value {
+    font-size: 1.55rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .stat-card .sub { font-size: 0.72rem; color: var(--text3); margin-top: 0.3rem; }
+  .up   { color: var(--red); }
+  .down { color: var(--green); }
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .chart-title { font-size: 0.88rem; font-weight: 500; }
+  .legend { display: flex; gap: 1.2rem; font-size: 0.75rem; color: var(--text2); }
+  .legend span { display: flex; align-items: center; gap: 0.4rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .history-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .history-table th {
+    text-align: left;
+    color: var(--text3);
+    font-weight: 400;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 0.75rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .history-table tr:last-child td { border-bottom: none; }
+  .history-table tr:hover td { background: var(--bg3); }
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+  .badge-r { background: var(--ryanair-bg); color: var(--ryanair); }
+  .badge-w { background: var(--wizz-bg); color: var(--wizz); }
+  .change-up   { color: var(--red); }
+  .change-down { color: var(--green); }
+  .change-new  { color: var(--text3); }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text3); }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .empty-state p { font-size: 0.85rem; line-height: 1.6; }
+  .footer { margin-top: 2rem; font-size: 0.72rem; color: var(--text3); text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Flight Price Tracker</h1>
+    <p id="last-update">Carga tu historial.json para visualizar los datos</p>
+  </div>
+  <label class="upload-zone">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+    </svg>
+    Cargar historial.json
+    <input type="file" id="file-input" accept=".json">
+  </label>
+</div>
+
+<div class="route-tabs" id="tabs"></div>
+<div id="summary" class="summary-grid" style="display:none"></div>
+
+<div id="chart-section" style="display:none">
+  <div class="chart-card">
+    <div class="chart-header">
+      <span class="chart-title">Evolucion del precio</span>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--ryanair)"></span>Ryanair</span>
+        <span><span class="dot" style="background:var(--wizz)"></span>Wizz Air</span>
+      </div>
+    </div>
+    <div style="position:relative; height:260px">
+      <canvas id="priceChart" role="img" aria-label="Grafico de evolucion de precios de vuelos"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <span class="chart-title">Historial de registros</span>
+      <span id="record-count" style="font-size:0.75rem; color:var(--text3)"></span>
+    </div>
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Fecha / Hora</th>
+          <th>Aerolinea</th>
+          <th>Ruta</th>
+          <th>Precio</th>
+          <th>Cambio</th>
+        </tr>
+      </thead>
+      <tbody id="history-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="empty" class="empty-state">
+  <div class="icon">&#128194;</div>
+  <p>Todavia no hay datos.<br>
+  Carga el archivo <strong>historial.json</strong> que genera el script<br>
+  o espera a que el monitor ejecute al menos una vez.</p>
+</div>
+
+<div class="footer" id="footer-note" style="display:none">
+  Los datos se leen localmente &middot; Nada se envia a ningun servidor
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+var DEMO = {
+  "ida_NUE_OTP_ryanair": [
+    {"ts":"2026-05-20T09:00:00Z","airline":"Ryanair","route":"IDA  NUE -> OTP","price":79},
+    {"ts":"2026-05-20T21:00:00Z","airline":"Ryanair","route":"IDA  NUE -> OTP","price":79},
+    {"ts":"2026-05-21T09:00:00Z","airline":"Ryanair","route":"IDA  NUE -> OTP","price":72},
+    {"ts":"2026-05-21T21:00:00Z","airline":"Ryanair","route":"IDA  NUE -> OTP","price":72},
+    {"ts":"2026-05-22T09:00:00Z","airline":"Ryanair","route":"IDA  NUE -> OTP","price":68},
+    {"ts":"2026-05-23T09:00:00Z","airline":"Ryanair","route":"IDA  NUE -> OTP","price":74},
+    {"ts":"2026-05-24T09:00:00Z","airline":"Ryanair","route":"IDA  NUE -> OTP","price":63}
+  ],
+  "ida_NUE_OTP_wizz_air": [
+    {"ts":"2026-05-20T09:00:00Z","airline":"Wizz Air","route":"IDA  NUE -> OTP","price":85},
+    {"ts":"2026-05-21T09:00:00Z","airline":"Wizz Air","route":"IDA  NUE -> OTP","price":81},
+    {"ts":"2026-05-22T09:00:00Z","airline":"Wizz Air","route":"IDA  NUE -> OTP","price":76},
+    {"ts":"2026-05-23T09:00:00Z","airline":"Wizz Air","route":"IDA  NUE -> OTP","price":76},
+    {"ts":"2026-05-24T09:00:00Z","airline":"Wizz Air","route":"IDA  NUE -> OTP","price":80}
+  ],
+  "vuelta_OTP_FMM_ryanair": [
+    {"ts":"2026-05-20T09:00:00Z","airline":"Ryanair","route":"VUELTA  OTP -> FMM","price":64},
+    {"ts":"2026-05-21T09:00:00Z","airline":"Ryanair","route":"VUELTA  OTP -> FMM","price":59},
+    {"ts":"2026-05-22T09:00:00Z","airline":"Ryanair","route":"VUELTA  OTP -> FMM","price":59},
+    {"ts":"2026-05-23T09:00:00Z","airline":"Ryanair","route":"VUELTA  OTP -> FMM","price":67},
+    {"ts":"2026-05-24T09:00:00Z","airline":"Ryanair","route":"VUELTA  OTP -> FMM","price":64}
+  ],
+  "vuelta_OTP_FMM_wizz_air": [
+    {"ts":"2026-05-20T09:00:00Z","airline":"Wizz Air","route":"VUELTA  OTP -> FMM","price":73},
+    {"ts":"2026-05-21T09:00:00Z","airline":"Wizz Air","route":"VUELTA  OTP -> FMM","price":69},
+    {"ts":"2026-05-22T09:00:00Z","airline":"Wizz Air","route":"VUELTA  OTP -> FMM","price":73},
+    {"ts":"2026-05-23T09:00:00Z","airline":"Wizz Air","route":"VUELTA  OTP -> FMM","price":66},
+    {"ts":"2026-05-24T09:00:00Z","airline":"Wizz Air","route":"VUELTA  OTP -> FMM","price":66}
+  ]
+};
+
+var globalData = null;
+var activeRoute = null;
+var chart = null;
+
+document.getElementById('file-input').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      loadData(JSON.parse(ev.target.result), false);
+    } catch(err) {
+      alert('Error al leer el JSON. Verifica que sea un historial.json valido.');
+    }
+  };
+  reader.readAsText(file);
+});
+
+function loadData(data, isDemo) {
+  globalData = data;
+  var routes = getRoutes(data);
+  if (!routes.length) { alert('No se encontraron datos en el archivo.'); return; }
+
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('chart-section').style.display = 'block';
+  document.getElementById('summary').style.display = 'grid';
+  document.getElementById('footer-note').style.display = 'block';
+
+  var lastTs = getLastTimestamp(data);
+  document.getElementById('last-update').textContent =
+    (isDemo ? 'Datos de demostracion - ' : '') +
+    'Ultima lectura: ' + formatDate(lastTs);
+
+  buildTabs(routes);
+  activeRoute = routes[0];
+  renderRoute(activeRoute);
+}
+
+function getRoutes(data) {
+  var set = {};
+  Object.values(data).forEach(function(entries) {
+    entries.forEach(function(e) { set[e.route] = true; });
+  });
+  return Object.keys(set);
+}
+
+function getLastTimestamp(data) {
+  var last = '';
+  Object.values(data).forEach(function(entries) {
+    entries.forEach(function(e) { if (e.ts > last) last = e.ts; });
+  });
+  return last;
+}
+
+function buildTabs(routes) {
+  var container = document.getElementById('tabs');
+  container.innerHTML = '';
+  routes.forEach(function(r, i) {
+    var btn = document.createElement('button');
+    btn.className = 'tab' + (i === 0 ? ' active' : '');
+    btn.textContent = r;
+    btn.onclick = function() {
+      document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+      btn.classList.add('active');
+      activeRoute = r;
+      renderRoute(r);
+    };
+    container.appendChild(btn);
+  });
+}
+
+function getRouteEntries(data, route) {
+  var entries = [];
+  Object.values(data).forEach(function(arr) {
+    arr.filter(function(e) { return e.route === route; })
+       .forEach(function(e) { entries.push(e); });
+  });
+  entries.sort(function(a, b) { return a.ts.localeCompare(b.ts); });
+  return entries;
+}
+
+function renderRoute(route) {
+  var entries = getRouteEntries(globalData, route);
+  renderSummary(entries);
+  renderChart(entries);
+  renderTable(entries);
+}
+
+function renderSummary(entries) {
+  var byAirline = {};
+  entries.forEach(function(e) {
+    if (!byAirline[e.airline]) byAirline[e.airline] = [];
+    byAirline[e.airline].push(e);
+  });
+
+  var cards = [];
+  Object.keys(byAirline).forEach(function(airline) {
+    var arr    = byAirline[airline];
+    var prices = arr.map(function(e) { return e.price; });
+    var current = prices[prices.length - 1];
+    var min = Math.min.apply(null, prices);
+    var max = Math.max.apply(null, prices);
+    var prev = prices.length > 1 ? prices[prices.length - 2] : null;
+    var diff = prev !== null ? current - prev : null;
+    var color = airline === 'Ryanair' ? 'var(--ryanair)' : 'var(--wizz)';
+    var diffHtml = '';
+    if (diff !== null) {
+      if (diff > 0)      diffHtml = '<span class="up">+' + diff + ' EUR vs anterior</span>';
+      else if (diff < 0) diffHtml = '<span class="down">' + diff + ' EUR vs anterior</span>';
+      else               diffHtml = 'Sin cambio';
+    } else {
+      diffHtml = 'Primera lectura';
+    }
+    cards.push(
+      '<div class="stat-card">' +
+        '<div class="label" style="color:' + color + '">' + airline + ' - Precio actual</div>' +
+        '<div class="value" style="color:' + color + '">' + current + ' EUR</div>' +
+        '<div class="sub">' + diffHtml + '</div>' +
+      '</div>' +
+      '<div class="stat-card">' +
+        '<div class="label">' + airline + ' - Min / Max</div>' +
+        '<div class="value"><span class="down">' + min + ' EUR</span></div>' +
+        '<div class="sub">Maximo: <span class="up">' + max + ' EUR</span> &middot; ' + arr.length + ' lecturas</div>' +
+      '</div>'
+    );
+  });
+  document.getElementById('summary').innerHTML = cards.join('');
+}
+
+function renderChart(entries) {
+  var byAirline = {};
+  entries.forEach(function(e) {
+    if (!byAirline[e.airline]) byAirline[e.airline] = [];
+    byAirline[e.airline].push({ x: new Date(e.ts), y: e.price });
+  });
+
+  var datasets = Object.keys(byAirline).map(function(airline) {
+    var isR = airline === 'Ryanair';
+    return {
+      label: airline,
+      data: byAirline[airline],
+      borderColor: isR ? '#f5a623' : '#c9247a',
+      backgroundColor: isR ? 'rgba(245,166,35,0.08)' : 'rgba(201,36,122,0.08)',
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointBackgroundColor: isR ? '#f5a623' : '#c9247a',
+      tension: 0.35,
+      fill: true,
+      borderDash: isR ? [] : [5, 3]
+    };
+  });
+
+  if (chart) { chart.destroy(); chart = null; }
+
+  chart = new Chart(document.getElementById('priceChart'), {
+    type: 'line',
+    data: { datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c2030',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          titleColor: '#8b90a0',
+          bodyColor: '#e8eaf0',
+          padding: 10,
+          callbacks: {
+            label: function(ctx) { return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y + ' EUR'; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            tooltipFormat: 'dd MMM HH:mm',
+            displayFormats: { day: 'dd MMM', hour: 'dd HH:mm' }
+          },
+          ticks: { color: '#555b6e', maxTicksLimit: 8 },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.07)' }
+        },
+        y: {
+          ticks: {
+            color: '#555b6e',
+            callback: function(v) { return v + ' EUR'; }
+          },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.07)' }
+        }
+      }
+    }
+  });
+}
+
+function renderTable(entries) {
+  var sorted = entries.slice().reverse();
+  document.getElementById('record-count').textContent = entries.length + ' registros';
+
+  var prevByKey = {};
+  var rows = entries.map(function(e) {
+    var key  = e.airline;
+    var prev = prevByKey[key];
+    var change;
+    if (prev === undefined) {
+      change = '<span class="change-new">nuevo</span>';
+    } else if (e.price > prev) {
+      change = '<span class="change-up">+' + (e.price - prev).toFixed(0) + ' EUR</span>';
+    } else if (e.price < prev) {
+      change = '<span class="change-down">' + (e.price - prev).toFixed(0) + ' EUR</span>';
+    } else {
+      change = '<span style="color:var(--text3)">--</span>';
+    }
+    prevByKey[key] = e.price;
+    return Object.assign({}, e, { change: change });
+  });
+
+  var tbody = document.getElementById('history-body');
+  tbody.innerHTML = rows.slice().reverse().map(function(r) {
+    var isR = r.airline === 'Ryanair';
+    return '<tr>' +
+      '<td style="color:var(--text)">' + formatDate(r.ts) + '</td>' +
+      '<td><span class="badge ' + (isR ? 'badge-r' : 'badge-w') + '">' + r.airline + '</span></td>' +
+      '<td>' + r.route + '</td>' +
+      '<td style="color:var(--text);font-weight:500">' + r.price + ' EUR</td>' +
+      '<td>' + r.change + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function formatDate(ts) {
+  if (!ts) return '--';
+  try {
+    return new Date(ts).toLocaleString('es-ES', {
+      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+    });
+  } catch(e) { return ts; }
+}
+
+loadData(DEMO, true);
+</script>
+</body>
+</html>
