@@ -4,7 +4,7 @@
 =============================================================================
 Rutas monitorizadas:
   IDA    : Nuremberg (NUE) -> Bucharest (OTP)   -- Viernes 12 Jun 2026
-  VUELTA : Bucharest (OTP) -> Memmingen (FMM)   -- Domingo 14 Jun 2026
+  VUELTA : Bucharest (BBU) -> Memmingen (FMM)   -- Domingo 14 Jun 2026
 Aerolineas : Ryanair - Wizz Air
 Fuente     : SerpApi -- Google Flights
 Alertas    : Bot de Telegram
@@ -45,9 +45,9 @@ RUTAS = [
         "airlines":    {"ryanair", "wizz air"},
     },
     {
-        "id":          "vuelta_OTP_FMM",
-        "label":       "VUELTA  OTP -> FMM",
-        "origin":      "OTP",
+        "id":          "vuelta_BBU_FMM",
+        "label":       "VUELTA  BBU -> FMM",
+        "origin":      "BBU",
         "destination": "FMM",
         "date":        "2026-06-14",
         "type":        "2",
