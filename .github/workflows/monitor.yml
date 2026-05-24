@@ -1,0 +1,59 @@
+name: Flight Price Monitor
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            precios.json
+            historial.json
+          key: flight-data-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            flight-data-${{ github.ref_name }}-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run flight monitor
+        env:
+          SERPAPI_KEY:        ${{ secrets.SERPAPI_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAX_PRICE:          ${{ secrets.MAX_PRICE }}
+        run: python flight_monitor.py
+
+      - name: Save updated cache
+        if: always()
+        uses: actions/cache@v4
+        with:
+          path: |
+            precios.json
+            historial.json
+          key: flight-data-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Upload historial as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: historial-${{ github.run_number }}
+          path: historial.json
+          retention-days: 90
