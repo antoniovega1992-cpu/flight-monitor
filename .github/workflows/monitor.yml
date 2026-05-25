@@ -3,7 +3,7 @@ name: Flight Price Monitor
 on:
   schedule:
     - cron: "0 5 * * *"
-    - cron: "0 22 * * *"
+    - cron: "0 21 * * *"
   workflow_dispatch:
 
 jobs:
@@ -35,10 +35,10 @@ jobs:
 
       - name: Run flight monitor
         env:
-          SERPAPI_KEY:        ${{ secrets.SERPAPI_KEY }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
-          MAX_PRICE:          ${{ secrets.MAX_PRICE }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAX_PRICE: ${{ secrets.MAX_PRICE }}
         run: python flight_monitor.py
 
       - name: Save updated cache
