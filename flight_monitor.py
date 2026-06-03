@@ -3,8 +3,7 @@
  flight_monitor.py -- Monitor de precios de vuelos con alertas por Telegram
 =============================================================================
 Rutas monitorizadas:
-  IDA    : Nuremberg (NUE) -> Bucharest (OTP)   -- Viernes 12 Jun 2026
-  VUELTA : Bucharest (BBU) -> Memmingen (FMM)   -- Domingo 14 Jun 2026
+ IDA    : Nuremberg (NUE) -> Bucharest (OTP)   -- Viernes 12 Jun 2026
 Aerolineas : Ryanair - Wizz Air
 Fuente     : SerpApi -- Google Flights
 Alertas    : Bot de Telegram
@@ -41,15 +40,6 @@ RUTAS = [
         "origin":      "NUE",
         "destination": "OTP",
         "date":        "2026-06-12",
-        "type":        "2",
-        "airlines":    {"ryanair", "wizz air"},
-    },
-    {
-        "id":          "vuelta_BBU_FMM",
-        "label":       "VUELTA  BBU -> FMM",
-        "origin":      "BBU",
-        "destination": "FMM",
-        "date":        "2026-06-14",
         "type":        "2",
         "airlines":    {"ryanair", "wizz air"},
     },
@@ -198,7 +188,6 @@ def consultar_ruta(ruta: dict) -> list:
 # Nota: los emojis van como escape Unicode para evitar problemas de encoding
 # ---------------------------------------------------------------------------
 
-# Prefijos de aerolinea en el mensaje
 PREFIJOS = {
     "Ryanair":  "\U0001f7e1",   # circulo amarillo
     "Wizz Air": "\U0001f49c",   # corazon morado
@@ -238,7 +227,6 @@ def construir_mensaje(ruta, airline, precio_anterior, precio_nuevo, deep_link):
     fecha_str = datetime.strptime(ruta["date"], "%Y-%m-%d").strftime("%a %d %b %Y")
     ahora     = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M")
 
-    # Enlace limpio -- solo si existe y es una URL basica
     if deep_link and deep_link.startswith("https://"):
         enlace = '\n\n<a href="' + deep_link[:200] + '">[Reservar en Google Flights]</a>'
     else:
